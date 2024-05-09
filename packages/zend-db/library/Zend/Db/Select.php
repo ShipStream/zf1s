@@ -1223,7 +1223,7 @@ class Zend_Db_Select
     {
         if ($this->_parts[self::FROM] && $this->_parts[self::GROUP]) {
             $group = array();
-            foreach ($this->_parts[self::GROUP] as $term) {
+            foreach (array_unique($this->_parts[self::GROUP]) as $term) {
                 $group[] = $this->_adapter->quoteIdentifier($term, true);
             }
             $sql .= ' ' . self::SQL_GROUP_BY . ' ' . implode(",\n\t", $group);
