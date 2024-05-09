@@ -905,15 +905,33 @@ class Zend_Db_Select
         $join  = $this->_adapter->quoteIdentifier(key($this->_parts[self::FROM]), true);
         $from  = $this->_adapter->quoteIdentifier($this->_uniqueCorrelation($name), true);
 
+        $jsonTable = false;
+        // Do not use condition when use JSON_TABLE
+        if ($name instanceof Zend_Db_Expr) {
+            $expression = trim($name->__toString());
+            if (substr($expression, 0, 10) === 'JSON_TABLE') {
+                $jsonTable = true;
+            }
+        } elseif (is_array($name) && 1 === count($name)) {
+            $expression = reset($name);
+            if ($expression instanceof Zend_Db_Expr) {
+                if (substr(trim($expression->__toString()), 0, 10) === 'JSON_TABLE') {
+                    $jsonTable = true;
+                }
+            }
+        }
+
         $joinCond = array();
-        foreach ((array)$cond as $fieldName) {
-            $cond1 = $from . '.' . $fieldName;
-            $cond2 = $join . '.' . $fieldName;
-            $joinCond[]  = $cond1 . ' = ' . $cond2;
+        if ( ! $jsonTable) {
+            foreach ((array)$cond as $fieldName) {
+                $cond1 = $from . '.' . $fieldName;
+                $cond2 = $join . '.' . $fieldName;
+                $joinCond[]  = $cond1 . ' = ' . $cond2;
+            }
         }
         $cond = implode(' '.self::SQL_AND.' ', $joinCond);
 
-        return $this->_join($type, $name, $cond, $cols, $schema);
+        return $this->_join($type, $name, $cond, $cols, $schema, $jsonTable);
     }
 
     /**
