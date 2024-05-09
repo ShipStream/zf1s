@@ -2404,6 +2404,6 @@ class Zend_Validate_Hostname extends Zend_Validate_Abstract
             }
         }
 
-        return implode($decoded);
+        return implode('', $decoded);
     }
 }

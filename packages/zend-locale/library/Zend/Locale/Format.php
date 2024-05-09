@@ -799,7 +799,7 @@ class Zend_Locale_Format
             }
         }
 
-        return implode($converted);
+        return implode('', $converted);
     }
 
     /**
@@ -1029,7 +1029,7 @@ class Zend_Locale_Format
         }
 
         // AM/PM correction
-        if ($hour !== false) {
+        if ($hour !== false && !empty($result['hour'])) {
             if (($am === true) && ($result['hour'] == 12)){
                 $result['hour'] = 0;
             } else if (($am === false) && ($result['hour'] != 12)) {
