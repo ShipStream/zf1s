@@ -201,7 +201,7 @@ class Zend_Http_UserAgent implements Serializable
      */
     public function unserialize($data)
     {
-        $this->__unserialize(unserialize($data));
+        $this->__unserialize(unserialize($data, ['allowed_classes' => false]));
     }
 
     /**
@@ -221,7 +221,7 @@ class Zend_Http_UserAgent implements Serializable
         }
 
         // Get device specification and instantiate
-        $deviceSpec            = unserialize($spec['device']);
+        $deviceSpec            = unserialize($spec['device'], ['allowed_classes' => false]);
         $deviceSpec['_config'] = $this->getConfig();
         $deviceSpec['_server'] = $this->getServer();
         $this->_device = new $deviceClass($deviceSpec);

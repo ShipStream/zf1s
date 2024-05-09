@@ -159,7 +159,7 @@ abstract class Zend_Http_UserAgent_AbstractDevice
      */
     public function unserialize($data)
     {
-        $this->__unserialize(unserialize($data));
+        $this->__unserialize(unserialize($data, ['allowed_classes' => false]));
     }
 
     /**
