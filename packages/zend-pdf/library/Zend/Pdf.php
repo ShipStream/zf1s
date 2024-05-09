@@ -108,6 +108,12 @@ class Zend_Pdf
     const PDF_FORM_FIELD_NOEXPORT = 4;
 
     /**
+     * Duplex mode
+     */
+    const DUPLEX_MODE_HORIZONTAL = 'horizontal';
+    const DUPLEX_MODE_VERTICAL = 'vertical';
+
+    /**
      * Pages collection
      *
      * @todo implement it as a class, which supports ArrayAccess and Iterator interfaces,
@@ -232,6 +238,49 @@ class Zend_Pdf
      * @var boolean
      */
     protected $_isNewDocument = true;
+
+    /**
+     * Duplex mode.
+     * Allowed values: 'vertical' or 'horizontal'.
+     *
+     * @var string
+     */
+    protected $_duplexMode = null;
+
+    /**
+     * @return string
+     */
+    public function getDuplexMode()
+    {
+        return $this->_duplexMode;
+    }
+
+    /**
+     * Set duplex mode
+     *
+     * @param string $mode
+     * @return Zend_Pdf
+     * @throws Zend_Pdf_Exception
+     */
+    public function setDuplexMode($mode = null)
+    {
+        $mode = $mode ?: null;
+        if ($mode && ! in_array($mode, [self::DUPLEX_MODE_HORIZONTAL, self::DUPLEX_MODE_VERTICAL])) {
+            throw new Zend_Pdf_Exception('Invalid duplex mode.');
+        }
+        $this->_duplexMode = $mode;
+        return $this;
+    }
+
+    /**
+     * Check if duplex mode is using
+     *
+     * @return bool
+     */
+    public function isDuplexMode()
+    {
+        return ($this->_duplexMode !== null);
+    }
 
     /**
      * Request used memory manager
