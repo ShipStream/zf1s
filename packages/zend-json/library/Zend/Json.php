@@ -67,9 +67,10 @@ class Zend_Json
      * Uses ext/json's json_decode if available.
      *
      * @param string $encodedValue Encoded in JSON format
-     * @param int $objectDecodeType Optional; flag indicating how to decode
-     * objects. See {@link Zend_Json_Decoder::decode()} for details.
+     * @param int $objectDecodeType Optional; flag indicating how to decode objects.
+     *                              See {@link Zend_Json_Decoder::decode()} for details.
      * @return mixed
+     * @throws Zend_Json_Exception
      */
     public static function decode($encodedValue, $objectDecodeType = Zend_Json::TYPE_ARRAY)
     {
@@ -89,18 +90,9 @@ class Zend_Json
                     throw new Zend_Json_Exception('Decoding failed');
                 }
             // php >= 5.3
-            } elseif (($jsonLastErr = json_last_error()) != JSON_ERROR_NONE) {
+            } elseif (json_last_error() != JSON_ERROR_NONE) {
                 // require_once 'Zend/Json/Exception.php';
-                switch ($jsonLastErr) {
-                    case JSON_ERROR_DEPTH:
-                        throw new Zend_Json_Exception('Decoding failed: Maximum stack depth exceeded');
-                    case JSON_ERROR_CTRL_CHAR:
-                        throw new Zend_Json_Exception('Decoding failed: Unexpected control character found');
-                    case JSON_ERROR_SYNTAX:
-                        throw new Zend_Json_Exception('Decoding failed: Syntax error');
-                    default:
-                        throw new Zend_Json_Exception('Decoding failed');
-                }
+                throw new Zend_Json_Exception('Decoding failed: '.json_last_error_msg());
             }
 
             return $decode;
