@@ -198,6 +198,12 @@ class Zend_Db
      */
     public static function factory($adapter, $config = array())
     {
+        if (!is_subclass_of($adapter, Zend_Db_Adapter_Abstract::class) && !($adapter instanceof Zend_Config)) {
+            throw new RuntimeException(
+                sprintf('"%s" must extend %s but doesn\'t', $adapter, Zend_Db_Adapter_Abstract::class)
+            );
+        }
+
         if ($config instanceof Zend_Config) {
             $config = $config->toArray();
         }
