@@ -95,7 +95,7 @@ class Zend_Json_Server_Error
         $code = (int) $code;
         if (in_array($code, $this->_allowedCodes)) {
             $this->_code = $code;
-        } elseif (in_array($code, range(-32099, -32000))) {
+        } elseif ($code <= -32000 && $code > -32600) {
             $this->_code = $code;
         }
 
