@@ -390,7 +390,7 @@ abstract class Zend_Controller_Response_Abstract
         if ((null === $name) || !is_string($name)) {
             $this->_body = array('default' => (string) $content);
         } else {
-            $this->_body[$name] = (string) $content;
+            $this->_body[$name] = $content;
         }
 
         return $this;
@@ -584,8 +584,9 @@ abstract class Zend_Controller_Response_Abstract
      */
     public function outputBody()
     {
-        $body = implode('', $this->_body);
-        echo $body;
+        foreach ($this->_body as $chunk) {
+            echo (string)$chunk;
+        }
     }
 
     /**
