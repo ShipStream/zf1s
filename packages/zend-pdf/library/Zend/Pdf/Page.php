@@ -68,6 +68,10 @@ class Zend_Pdf_Page extends Zend_Pdf_Canvas_Abstract
      */
     const SIZE_LETTER_LANDSCAPE  = '792:612:';
 
+    /**
+     * Size representing a US Half-letter page in landscape (wide) orientation.
+     */
+    const SIZE_HALF_LETTER_LANDSCAPE = '396:612:';
 
   /* Shape Drawing */
 
@@ -141,6 +145,17 @@ class Zend_Pdf_Page extends Zend_Pdf_Canvas_Abstract
      * @var boolean
      */
     protected $_safeGS;
+
+    /**
+     * RSF custom functionality.
+     *
+     * There is no way to change page size after the page creation. Custom height can be used to avoid multiple
+     * calculations for different page sizes. For example, to create US HALF-LETTER LANDSCAPE page and use calculations for US LETTER page
+     * just need to set US LETTER page height as custom height and US HALF-LETTER page type during the page creation.
+     *
+     * @var int
+     */
+    protected $_customHeight = 0;
 
     /**
      * Object constructor.
@@ -451,12 +466,31 @@ class Zend_Pdf_Page extends Zend_Pdf_Canvas_Abstract
     }
 
     /**
+     * @param int|null $height
+     */
+    public function setCustomHeight($height)
+    {
+        $this->_customHeight = intval($height);
+    }
+
+    /**
+     * @return int|null
+     */
+    public function getCustomHeight()
+    {
+        return $this->_customHeight;
+    }
+
+    /**
      * Return the height of this page in points.
      *
      * @return float
      */
     public function getHeight()
     {
+        if ($this->getCustomHeight()) {
+            return $this->getCustomHeight();
+        }
         return $this->_dictionary->MediaBox->items[3]->value -
                $this->_dictionary->MediaBox->items[1]->value;
     }
