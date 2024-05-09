@@ -264,7 +264,19 @@ abstract class Zend_Pdf_Resource_Font_Simple extends Zend_Pdf_Resource_Font
             return $string; // returning here b/c AIX doesnt know what CP1252 is
         }
 
-        return iconv($charEncoding, 'CP1252//IGNORE', $string);
+        // Standard fonts probably do not support full UTF-8
+        if ($this->_fontType === Zend_Pdf_Font::TYPE_STANDARD) {
+            return @iconv($charEncoding, 'Windows-1252//IGNORE', $string);
+        }
+        // TrueType fonts and non-UTF-8 input should be transliterated to UTF-8
+        else if ($this->_fontType === Zend_Pdf_Font::TYPE_TRUETYPE || $charEncoding != 'UTF-8') {
+            //return $string;
+            return @iconv($charEncoding, 'UTF-8//TRANSLIT', $string);
+        }
+        // Otherwise hope for the best
+        else {
+            return $string;
+        }
     }
 
     /**
