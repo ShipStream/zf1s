@@ -1270,6 +1270,7 @@ class Zend_Db_Select
                     $order[] = $this->_adapter->quoteIdentifier($term, true);
                 }
             }
+            $order = array_unique($order);
             $sql .= ' ' . self::SQL_ORDER_BY . ' ' . implode(', ', $order);
         }
 
