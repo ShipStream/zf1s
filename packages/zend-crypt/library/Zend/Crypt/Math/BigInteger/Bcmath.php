@@ -112,7 +112,7 @@ class Zend_Crypt_Math_BigInteger_Bcmath implements Zend_Crypt_Math_BigInteger_In
      */
     public function modulus($left_operand, $modulus)
     {
-        return bcmod($left_operand, $modulus);
+        return bcmod($left_operand, $modulus, 0);
     }
 
     /**
@@ -191,7 +191,7 @@ class Zend_Crypt_Math_BigInteger_Bcmath implements Zend_Crypt_Math_BigInteger_In
             return "\0";
         }
         while (bccomp($operand, 0) > 0) {
-            $return = chr(bcmod($operand, 256)) . $return;
+            $return = chr(bcmod($operand, 256, 0)) . $return;
             $operand = bcdiv($operand, 256);
         }
         if (ord($return[0]) > 127) {
@@ -204,7 +204,7 @@ class Zend_Crypt_Math_BigInteger_Bcmath implements Zend_Crypt_Math_BigInteger_In
     {
         $return = '';
         while(bccomp($operand, '0')) {
-            $return .= chr(bcmod($operand, '256'));
+            $return .= chr(bcmod($operand, '256', 0));
             $operand = bcdiv($operand, '256');
         }
         return $return;

@@ -347,7 +347,7 @@ class Zend_Locale_Math
     {
         $op1 = self::exponent($op1);
         $op2 = self::exponent($op2);
-        return bcmod($op1, $op2);
+        return bcmod($op1, $op2, 0);
     }
 
     /**
