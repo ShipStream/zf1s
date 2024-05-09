@@ -55,6 +55,7 @@ class Zend_Db_Select
     const LIMIT_COUNT    = 'limitcount';
     const LIMIT_OFFSET   = 'limitoffset';
     const FOR_UPDATE     = 'forupdate';
+    const COMMENTS       = 'comments';
 
     const INNER_JOIN     = 'inner join';
     const LEFT_JOIN      = 'left join';
@@ -63,8 +64,19 @@ class Zend_Db_Select
     const CROSS_JOIN     = 'cross join';
     const NATURAL_JOIN   = 'natural join';
 
+    const USE_INDEX      = 'use index';
+    const IGNORE_INDEX   = 'ignore index';
+    const FORCE_INDEX    = 'force index';
+    const HINT_JOIN      = 'join';
+    const HINT_ORDER_BY  = 'order by';
+    const HINT_GROUP_BY  = 'group by';
+
     const SQL_WILDCARD   = '*';
     const SQL_SELECT     = 'SELECT';
+    const SQL_USE        = 'USE';
+    const SQL_IGNORE     = 'IGNORE';
+    const SQL_FORCE      = 'FORCE';
+    const SQL_INDEX      = 'INDEX';
     const SQL_UNION      = 'UNION';
     const SQL_UNION_ALL  = 'UNION ALL';
     const SQL_FROM       = 'FROM';
@@ -74,6 +86,9 @@ class Zend_Db_Select
     const SQL_ORDER_BY   = 'ORDER BY';
     const SQL_HAVING     = 'HAVING';
     const SQL_FOR_UPDATE = 'FOR UPDATE';
+    const SQL_FOR_JOIN   = 'FOR JOIN';
+    const SQL_FOR_ORDER_BY = 'FOR ORDER BY';
+    const SQL_FOR_GROUP_BY = 'FOR GROUP BY';
     const SQL_AND        = 'AND';
     const SQL_AS         = 'AS';
     const SQL_OR         = 'OR';
@@ -81,9 +96,9 @@ class Zend_Db_Select
     const SQL_ASC        = 'ASC';
     const SQL_DESC       = 'DESC';
 
-    const REGEX_COLUMN_EXPR       = '/^([\w]*\s*\(([^\(\)]|(?1))*\))$/';
-    const REGEX_COLUMN_EXPR_ORDER = '/^([\w]+\s*\(([^\(\)]|(?1))*\))$/';
-    const REGEX_COLUMN_EXPR_GROUP = '/^([\w]+\s*\(([^\(\)]|(?1))*\))$/';
+    const REGEX_COLUMN_EXPR       = '/^([\w]*\(([^\)]|(?1))*\))$/';
+    const REGEX_COLUMN_EXPR_ORDER = '/^([\w]*\(([^\)]|(?1))*\))$/';
+    const REGEX_COLUMN_EXPR_GROUP = '/^([\w]*\(([^\)]|(?1))*\))$/';
     
     // @see http://stackoverflow.com/a/13823184/2028814
     const REGEX_SQL_COMMENTS      = '@
@@ -134,7 +149,8 @@ class Zend_Db_Select
         self::ORDER        => array(),
         self::LIMIT_COUNT  => null,
         self::LIMIT_OFFSET => null,
-        self::FOR_UPDATE   => false
+        self::FOR_UPDATE   => false,
+        self::COMMENTS     => [],
     );
 
     /**
@@ -297,6 +313,7 @@ class Zend_Db_Select
      *
      * @param  array $select Array of select clauses for the union.
      * @return Zend_Db_Select This Zend_Db_Select object.
+     * @throws Zend_Db_Select_Exception
      */
     public function union($select = array(), $type = self::SQL_UNION)
     {
@@ -675,6 +692,75 @@ class Zend_Db_Select
     public function forUpdate($flag = true)
     {
         $this->_parts[self::FOR_UPDATE] = (bool) $flag;
+        return $this;
+    }
+
+    /**
+     * @param string $verb
+     * @param string|array $index
+     * @param null|string $modifier
+     * @return Zend_Db_Select
+     * @throws Zend_Db_Select_Exception
+     */
+    public function hintIndexFrom($verb, $index, $modifier = null)
+    {
+        if (empty($this->_parts[self::FROM])) {
+            throw new Zend_Db_Select_Exception("Can only specify hints after specifying from.");
+        }
+        $fromCorrelationName = null;
+        foreach ($this->_parts[self::FROM] as $correlation => $table) {
+            if ($table['joinType'] == self::FROM) {
+                $fromCorrelationName = $correlation;
+            }
+        }
+
+        if ( ! $fromCorrelationName) {
+            throw new Zend_Db_Select_Exception("Can only specify hints after specifying from.");
+        }
+
+        return $this->hintIndexJoin($fromCorrelationName, $verb, $index, $modifier);
+    }
+
+    /**
+     * @param string $correlation
+     * @param string $verb
+     * @param string|array $index
+     * @param null|string $modifier
+     * @return Zend_Db_Select
+     * @throws Zend_Db_Select_Exception
+     */
+    public function hintIndexJoin($correlation, $verb, $index, $modifier = null)
+    {
+        if (empty($this->_parts[self::FROM])) {
+            throw new Zend_Db_Select_Exception("Can only specify hints after specifying join.");
+        }
+        if (empty($this->_parts[self::FROM][$correlation])) {
+            throw new Zend_Db_Select_Exception("Correlation not found: $correlation");
+        }
+        $hint = ['verb' => strtolower($verb), 'indexes' => (array) $index, 'modifier' => strtolower($modifier)];
+
+        $this->_parts[self::FROM][$correlation]['hints'][] = $hint;
+
+        return $this;
+    }
+
+    /**
+     * @param $comment
+     * @return $this
+     */
+    public function addCommentBefore($comment)
+    {
+        $this->_parts[self::COMMENTS][] = ['position' => 'before', 'comment' => $comment];
+        return $this;
+    }
+
+    /**
+     * @param $comment
+     * @return $this
+     */
+    public function addCommentAfter($comment)
+    {
+        $this->_parts[self::COMMENTS][] = ['position' => 'after', 'comment' => $comment];
         return $this;
     }
 
@@ -1174,6 +1260,49 @@ class Zend_Db_Select
             $tmp .= $this->_getQuotedSchema($table['schema']);
             $tmp .= $this->_getQuotedTable($table['tableName'], $correlationName);
 
+            // Add index hints (if applicable)
+            // index_hint: {
+            //    USE {INDEX|KEY}
+            //      [FOR {JOIN|ORDER BY|GROUP BY}] ([index_list])
+            //  | {IGNORE|FORCE} {INDEX|KEY}
+            //      [FOR {JOIN|ORDER BY|GROUP BY}] (index_list)
+            //}
+            if ( ! empty($table['hints'])) {
+                foreach ($table['hints'] as $hint) {
+                    switch ($hint['verb']) {
+                        case self::USE_INDEX:
+                            $tmp .= ' ' . self::SQL_USE . ' ' . self::SQL_INDEX;
+                            break;
+                        case self::IGNORE_INDEX:
+                            $tmp .= ' ' . self::SQL_IGNORE . ' ' . self::SQL_INDEX;
+                            break;
+                        case self::FORCE_INDEX:
+                            $tmp .= ' ' . self::SQL_FORCE . ' ' . self::SQL_INDEX;
+                            break;
+                    }
+                    if ( ! empty($hint['modifier'])) {
+                        switch ($hint['modifier']) {
+                            case self::HINT_JOIN:
+                                $tmp .= ' ' . self::SQL_FOR_JOIN;
+                                break;
+                            case self::HINT_ORDER_BY:
+                                $tmp .= ' ' . self::SQL_FOR_ORDER_BY;
+                                break;
+                            case self::HINT_GROUP_BY:
+                                $tmp .= ' ' . self::SQL_FOR_GROUP_BY;
+                                break;
+                        }
+                    }
+                    if ( ! empty($hint['indexes'])) {
+                        $indexes = [];
+                        foreach ($hint['indexes'] as $indexName) {
+                            $indexes[] = $this->_adapter->quoteIdentifier($indexName);
+                        }
+                        $tmp .= ' (' . implode(',', $indexes) . ')';
+                    }
+                }
+            }
+
             // Add join conditions (if applicable)
             if (!empty($from) && ! empty($table['joinCondition'])) {
                 $tmp .= ' ' . self::SQL_ON . ' ' . $table['joinCondition'];
@@ -1335,6 +1464,31 @@ class Zend_Db_Select
     {
         if ($this->_parts[self::FOR_UPDATE]) {
             $sql .= ' ' . self::SQL_FOR_UPDATE;
+        }
+
+        return $sql;
+    }
+
+    /**
+     * Render Comments
+     *
+     * @param string   $sql SQL query
+     * @return string
+     */
+    protected function _renderComments($sql)
+    {
+        $before = [];
+        foreach ($this->_parts[self::COMMENTS] as $comment) {
+            $str = substr($comment['comment'], 0, 1024); // Prevent comments being too long
+            $str = addcslashes($str, '/'); // Prevent ending comment identifier
+            if ($comment['position'] == 'before') {
+                $before[] = "/* $str */";
+            } else {
+                $sql .= "\n/* $str */";
+            }
+        }
+        if ($before) {
+            $sql = implode("\n", $before) . "\n" . $sql;
         }
 
         return $sql;
