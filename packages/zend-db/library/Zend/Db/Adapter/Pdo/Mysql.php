@@ -229,7 +229,8 @@ class Zend_Db_Adapter_Pdo_Mysql extends Zend_Db_Adapter_Pdo_Abstract
                 'UNSIGNED'         => $unsigned,
                 'PRIMARY'          => $primary,
                 'PRIMARY_POSITION' => $primaryPosition,
-                'IDENTITY'         => $identity
+                'IDENTITY'         => $identity,
+                'GENERATED'        => $row[$extra] == 'VIRTUAL GENERATED' || $row[$extra] == 'STORED GENERATED'
             );
             ++$i;
         }
