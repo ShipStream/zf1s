@@ -50,7 +50,11 @@ class Zend_Json_Server_Request_Http extends Zend_Json_Server_Request
         $json = file_get_contents('php://input');
         $this->_rawJson = $json;
         if (!empty($json)) {
-            $this->loadJson($json);
+            try {
+                $this->loadJson($json);
+            } catch (Exception $e) {
+                $this->_isMethodError = true;
+            }
         }
     }
 
