@@ -125,9 +125,11 @@ class Zend_Pdf_Resource_Image_Png extends Zend_Pdf_Resource_Image
          */
         while (!feof($imageFile)) {
             $chunkLengthBytes = fread($imageFile, 4);
-            if ($chunkLengthBytes === false) {
+            if ($chunkLengthBytes === false || $chunkLengthBytes === '') {
                 // require_once 'Zend/Pdf/Exception.php';
-                throw new Zend_Pdf_Exception('Error ocuured while image file reading.');
+                // Ignore the empty chunk instead of throwing the exception
+                // throw new Zend_Pdf_Exception('Error occurred while reading image file.');
+                continue;
             }
 
             $chunkLengthtmp = unpack('Ni', $chunkLengthBytes);
