@@ -222,9 +222,6 @@ class Zend_Locale_Math
     public static function exponent($value, $scale = null)
     {
         $scale = max(0, $scale);
-        if (!extension_loaded('bcmath')) {
-            return $value;
-        }
 
         $split = explode('e', $value);
         if (count($split) == 1) {
