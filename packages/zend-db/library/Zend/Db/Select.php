@@ -44,6 +44,7 @@
 class Zend_Db_Select
 {
 
+    const SELECT_HINT    = 'selecthint';
     const DISTINCT       = 'distinct';
     const COLUMNS        = 'columns';
     const FROM           = 'from';
@@ -139,6 +140,7 @@ class Zend_Db_Select
      * @var array
      */
     protected static $_partsInit = array(
+        self::SELECT_HINT  => array(),
         self::DISTINCT     => false,
         self::COLUMNS      => array(),
         self::UNION        => array(),
@@ -696,6 +698,16 @@ class Zend_Db_Select
     }
 
     /**
+     * @param string $text
+     * @return $this
+     */
+    public function hintSelect($text)
+    {
+        $this->_parts[self::SELECT_HINT][] = $text;
+        return $this;
+    }
+
+    /**
      * @param string $verb
      * @param string|array $index
      * @param null|string $modifier
@@ -1179,6 +1191,21 @@ class Zend_Db_Select
     protected function _getQuotedTable($tableName, $correlationName = null)
     {
         return $this->_adapter->quoteTableAs($tableName, $correlationName, true);
+    }
+
+    /**
+     * Render hints for SELECT statement (just after SELECT)
+     *
+     * @param $sql
+     * @return mixed|string
+     */
+    protected function _renderSelecthint($sql)
+    {
+        if ($this->_parts[self::SELECT_HINT]) {
+            $sql .= ' ' . implode(' ', $this->_parts[self::SELECT_HINT]);
+        }
+
+        return $sql;
     }
 
     /**
