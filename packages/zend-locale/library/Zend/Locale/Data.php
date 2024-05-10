@@ -816,6 +816,13 @@ class Zend_Locale_Data
                 }
                 break;
 
+            case 'territorytometazone':
+                $_temp = self::_getFile('metaZones', '/supplementalData/metaZones/mapTimezones/mapZone[@territory=\'' . $val . '\']', 'other');
+                foreach ($_temp as $key => $found) {
+                    $temp += self::_getFile('metaZones', '/supplementalData/metaZones/mapTimezones/mapZone[@territory=\'' . $val . '\' and @other=\'' . $key . '\']', 'type', $key);
+                }
+                break;
+
             case 'timezonetoterritory':
                 $_temp = self::_getFile('metaZones', '/supplementalData/metaZones/mapTimezones/mapZone', 'territory');
                 foreach ($_temp as $key => $found) {
@@ -828,6 +835,10 @@ class Zend_Locale_Data
                 foreach($_temp as $key => $found) {
                     $temp += self::_getFile($locale, '/ldml/dates/timeZoneNames/zone[@type=\'' . $key . '\']/exemplarCity', '', $key);
                 }
+                break;
+
+            case 'metazonenamelonggeneric':
+                $temp = self::_getFile($locale, '/ldml/dates/timeZoneNames/metazone[@type=\'' . $value . '\']/long/generic', '', $value);
                 break;
 
             case 'timezonetocity':
