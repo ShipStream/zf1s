@@ -258,6 +258,7 @@ abstract class Zend_Db_Adapter_Pdo_Abstract extends Zend_Db_Adapter_Abstract
      *                      May be a string or Zend_Db_Select.
      * @return integer      Number of rows that were modified
      *                      or deleted by the SQL statement
+     * @throws Zend_Db_Adapter_Exception
      */
     public function exec($sql)
     {

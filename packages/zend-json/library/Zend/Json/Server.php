@@ -180,7 +180,7 @@ class Zend_Json_Server extends Zend_Server_Abstract
     /**
      * Handle request
      *
-     * @param  Zend_Json_Server_Request $request
+     * @param  bool|Zend_Json_Server_Request $request
      * @return null|Zend_Json_Server_Response
      */
     public function handle($request = false)
@@ -201,7 +201,7 @@ class Zend_Json_Server extends Zend_Server_Abstract
         // Emit response?
         if ($this->autoEmitResponse()) {
             echo $response;
-            return;
+            return null;
         }
 
         // or return it?

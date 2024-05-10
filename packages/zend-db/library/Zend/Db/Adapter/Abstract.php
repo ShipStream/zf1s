@@ -82,7 +82,7 @@ abstract class Zend_Db_Adapter_Abstract
     /**
      * Database connection
      *
-     * @var object|resource|null
+     * @var object|resource|null|PDO
      */
     protected $_connection = null;
 
@@ -309,7 +309,7 @@ abstract class Zend_Db_Adapter_Abstract
      * Returns the underlying database connection object or resource.
      * If not presently connected, this initiates the connection.
      *
-     * @return object|resource|null
+     * @return object|resource|null|PDO
      */
     public function getConnection()
     {
@@ -438,6 +438,7 @@ abstract class Zend_Db_Adapter_Abstract
     /**
      * Set the default statement class.
      *
+     * @param string $class
      * @return Zend_Db_Adapter_Abstract Fluent interface
      */
     public function setStatementClass($class)

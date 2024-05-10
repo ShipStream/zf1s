@@ -990,15 +990,9 @@ class Zend_Controller_Request_Http extends Zend_Controller_Request_Abstract
      *
      * @param string $header HTTP header name
      * @return string|false HTTP header value, or false if not found
-     * @throws Zend_Controller_Request_Exception
      */
-    public function getHeader($header)
+    public function getHeader(string $header)
     {
-        if (empty($header)) {
-            // require_once 'Zend/Controller/Request/Exception.php';
-            throw new Zend_Controller_Request_Exception('An HTTP header name is required');
-        }
-
         // Try to get it from the $_SERVER array first
         $temp = strtoupper(str_replace('-', '_', $header));
         if (isset($_SERVER['HTTP_' . $temp])) {

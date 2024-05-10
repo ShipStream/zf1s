@@ -333,6 +333,7 @@ abstract class Zend_Controller_Response_Abstract
      * has been specified, it is sent with the first header.
      *
      * @return Zend_Controller_Response_Abstract
+     * @throws Zend_Controller_Response_Exception
      */
     public function sendHeaders()
     {

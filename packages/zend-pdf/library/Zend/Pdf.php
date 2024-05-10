@@ -120,7 +120,7 @@ class Zend_Pdf
      *       to provide incremental parsing and pages tree updating.
      *       That will give good performance and memory (PDF size) benefits.
      *
-     * @var array   - array of Zend_Pdf_Page object
+     * @var Zend_Pdf_Page[]
      */
     public $pages = array();
 
