@@ -370,7 +370,7 @@ class Zend_Cache_Frontend_Page extends Zend_Cache_Core
             $var = $_POST;
             break;
         case 'Session':
-            if (isset($_SESSION)) {
+            if (session_status() === PHP_SESSION_ACTIVE) {
                 $var = $_SESSION;
             } else {
                 $var = null;
