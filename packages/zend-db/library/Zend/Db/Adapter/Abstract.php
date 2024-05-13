@@ -584,11 +584,13 @@ abstract class Zend_Db_Adapter_Abstract
      *
      * @param  mixed        $table The table to update.
      * @param  array        $bind  Column-value pairs.
-     * @param  mixed        $where UPDATE WHERE clause(s).
+     * @param array|string|Zend_Db_Expr $where UPDATE WHERE clause(s).
+     * @param  string|Zend_Db_Expr|array|null $order
+     * @param  int|null     $limit
      * @return int          The number of affected rows.
      * @throws Zend_Db_Adapter_Exception
      */
-    public function update($table, array $bind, $where = '')
+    public function update($table, array $bind, $where = '', $order = null, ?int $limit = null)
     {
         /**
          * Build "col = ?" pairs for the statement,
@@ -620,6 +622,7 @@ abstract class Zend_Db_Adapter_Abstract
         }
 
         $where = $this->_whereExpr($where);
+        $order = $this->_orderExpr($order);
 
         /**
          * Build the UPDATE statement
@@ -627,7 +630,10 @@ abstract class Zend_Db_Adapter_Abstract
         $sql = "UPDATE "
              . $this->quoteIdentifier($table, true)
              . ' SET ' . implode(', ', $set)
-             . (($where) ? " WHERE $where" : '');
+             . ($where ? " WHERE $where" : '')
+             . ($order ? " ORDER BY $order" : '')
+             . ($limit !== null ? " LIMIT $limit" : '');
+
 
         /**
          * Execute the statement and return the number of affected rows
@@ -645,19 +651,24 @@ abstract class Zend_Db_Adapter_Abstract
      * Deletes table rows based on a WHERE clause.
      *
      * @param  mixed        $table The table to update.
-     * @param  mixed        $where DELETE WHERE clause(s).
+     * @param array|string|Zend_Db_Expr $where UPDATE WHERE clause(s).
+     * @param string|Zend_Db_Expr|array|null $order
+     * @param int|null      $limit
      * @return int          The number of affected rows.
      */
-    public function delete($table, $where = '')
+    public function delete($table, $where = '', $order = null, ?int $limit = null)
     {
         $where = $this->_whereExpr($where);
+        $order = $this->_orderExpr($order);
 
         /**
          * Build the DELETE statement
          */
         $sql = "DELETE FROM "
              . $this->quoteIdentifier($table, true)
-             . (($where) ? " WHERE $where" : '');
+             . ($where ? " WHERE $where" : '')
+             . ($order ? " ORDER BY $order" : '')
+             . ($limit !== null ? " LIMIT $limit" : '');
 
         /**
          * Execute the statement and return the number of affected rows
@@ -699,6 +710,29 @@ abstract class Zend_Db_Adapter_Abstract
 
         $where = implode(' AND ', $where);
         return $where;
+    }
+
+    /**
+     * Convert an array, string, or Zend_Db_Expr object
+     * into a string to put in a WHERE clause.
+     *
+     * @param string|Zend_Db_Expr|array|null $order
+     * @return string
+     */
+    protected function _orderExpr($order): string
+    {
+        if (empty($order)) {
+            return '';
+        }
+        if ( ! is_array($order)) {
+            $order = [$order];
+        }
+        $order = array_filter(array_map(fn($v) => trim((string)$v), $order));
+        if (empty($order)) {
+            return '';
+        }
+        $order = implode(', ', $order);
+        return $order;
     }
 
     /**
