@@ -55,7 +55,7 @@ class Zend_Db_Select
     const ORDER          = 'order';
     const LIMIT_COUNT    = 'limitcount';
     const LIMIT_OFFSET   = 'limitoffset';
-    const FOR_UPDATE     = 'forupdate';
+    const LOCKING_READ   = 'lockingread';
     const COMMENTS       = 'comments';
 
     const INNER_JOIN     = 'inner join';
@@ -64,6 +64,11 @@ class Zend_Db_Select
     const FULL_JOIN      = 'full join';
     const CROSS_JOIN     = 'cross join';
     const NATURAL_JOIN   = 'natural join';
+
+    const FOR_UPDATE     = 'for update';
+    const FOR_SHARE      = 'for share';
+    const SKIP_LOCKED    = 'skip locked';
+    const NOWAIT         = 'nowait';
 
     const USE_INDEX      = 'use index';
     const IGNORE_INDEX   = 'ignore index';
@@ -151,7 +156,7 @@ class Zend_Db_Select
         self::ORDER        => array(),
         self::LIMIT_COUNT  => null,
         self::LIMIT_OFFSET => null,
-        self::FOR_UPDATE   => false,
+        self::LOCKING_READ => [],
         self::COMMENTS     => [],
     );
 
@@ -689,11 +694,31 @@ class Zend_Db_Select
      * Makes the query SELECT FOR UPDATE.
      *
      * @param bool $flag Whether or not the SELECT is FOR UPDATE (default true).
+     * @param string $option SKIP LOCKED or NOWAIT
      * @return Zend_Db_Select This Zend_Db_Select object.
      */
-    public function forUpdate($flag = true)
+    public function forUpdate($flag = true, $option = '')
     {
-        $this->_parts[self::FOR_UPDATE] = (bool) $flag;
+        if ( ! $flag && ($this->_parts[self::LOCKING_READ][0] ?? null) !== self::FOR_UPDATE) {
+            return $this;
+        }
+        $this->_parts[self::LOCKING_READ] = $flag ? [self::FOR_UPDATE, $option] : [];
+        return $this;
+    }
+
+    /**
+     * Makes the query SELECT FOR SHARE.
+     *
+     * @param bool $flag Whether the SELECT is FOR SHARE (default true).
+     * @param string $option SKIP LOCKED or NOWAIT
+     * @return Zend_Db_Select This Zend_Db_Select object.
+     */
+    public function forShare($flag = true, $option = '')
+    {
+        if ( ! $flag && ($this->_parts[self::LOCKING_READ][0] ?? NULL) !== self::FOR_SHARE) {
+            return $this;
+        }
+        $this->_parts[self::LOCKING_READ] = $flag ? [self::FOR_SHARE, $option] : [];
         return $this;
     }
 
@@ -1487,13 +1512,30 @@ class Zend_Db_Select
      * @param string   $sql SQL query
      * @return string
      */
-    protected function _renderForupdate($sql)
+    protected function _renderLockingread($sql)
     {
-        if ($this->_parts[self::FOR_UPDATE]) {
-            $sql .= ' ' . self::SQL_FOR_UPDATE;
+         if (empty($this->_parts[self::LOCKING_READ][0])) {
+            return $sql;
         }
-
-        return $sql;
+        switch ($this->_parts[self::LOCKING_READ][0]) {
+            case self::FOR_UPDATE:
+                $_sql = strtoupper(self::FOR_UPDATE);
+                break;
+            case self::FOR_SHARE:
+                $_sql = strtoupper(self::FOR_SHARE);
+                break;
+            default:
+                return $sql;
+        }
+        switch ($this->_parts[self::LOCKING_READ][1]) {
+            case self::NOWAIT:
+                $_sql .= ' ' . strtoupper(self::NOWAIT);
+                break;
+            case self::SKIP_LOCKED:
+                $_sql .= ' ' . strtoupper(self::SKIP_LOCKED);
+                break;
+        }
+        return "$sql $_sql";
     }
 
     /**
