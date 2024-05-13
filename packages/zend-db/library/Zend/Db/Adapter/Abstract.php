@@ -518,7 +518,7 @@ abstract class Zend_Db_Adapter_Abstract
      *
      * @return Zend_Db_Adapter_Abstract
      */
-    public function rollBack()
+    public function rollBack(bool $force = false)
     {
         $this->_connect();
         $q = $this->_profiler->queryStart('rollback', Zend_Db_Profiler::TRANSACTION);
