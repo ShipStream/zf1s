@@ -112,7 +112,9 @@ abstract class Zend_Controller_Response_Abstract
      */
     public function setHeader($name, $value, $replace = false)
     {
-        $this->canSendHeaders(true);
+        if (PHP_SAPI !== 'cli') { // Avoid errors when using CLI for testing
+            $this->canSendHeaders(true);
+        }
         $name  = $this->_normalizeHeader($name);
         $value = (string) $value;
 
