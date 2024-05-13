@@ -462,12 +462,13 @@ class Zend_Json_Server_Smd_Service
             $type = 'object';
         }
 
-        $paramType = $this->_paramMap[$type];
-        if (!$isReturn && ('null' == $paramType)) {
-            // require_once 'Zend/Json/Server/Exception.php';
+        if (!$isReturn && ('void' == $type)) {
+            throw new Zend_Json_Server_Exception('Invalid param type provided ("' . $type . '")');
+        }
+        if (empty($this->_paramMap[$type])) {
             throw new Zend_Json_Server_Exception('Invalid param type provided ("' . $type . '")');
         }
 
-        return $paramType;
+        return $this->_paramMap[$type];
     }
 }
