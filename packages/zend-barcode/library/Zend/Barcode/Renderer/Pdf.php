@@ -196,11 +196,16 @@ class Zend_Barcode_Renderer_Pdf extends Zend_Barcode_Renderer_RendererAbstract
 
         $page->setLineColor($color);
         $page->setFillColor($color);
-        $page->setFont(Zend_Pdf_Font::fontWithPath($font), $size * $this->_moduleSize * 1.2);
+        if (strpos($font, '.')) {
+            $zendFont = Zend_Pdf_Font::fontWithPath($font);
+        } else {
+            $zendFont = Zend_Pdf_Font::fontWithName($font);
+        }
+        $page->setFont($zendFont, $size * $this->_moduleSize * 1.2);
 
         $width = $this->widthForStringUsingFontSize(
             $text,
-            Zend_Pdf_Font::fontWithPath($font),
+            $zendFont,
             $size * $this->_moduleSize
         );
 
