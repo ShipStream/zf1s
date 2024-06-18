@@ -774,7 +774,7 @@ class Zend_Db_Select
         if (empty($this->_parts[self::FROM][$correlation])) {
             throw new Zend_Db_Select_Exception("Correlation not found: $correlation");
         }
-        $hint = ['verb' => strtolower($verb), 'indexes' => (array) $index, 'modifier' => strtolower($modifier)];
+        $hint = ['verb' => strtolower($verb), 'indexes' => (array) $index, 'modifier' => strtolower((string)$modifier)];
 
         $this->_parts[self::FROM][$correlation]['hints'][] = $hint;
 
