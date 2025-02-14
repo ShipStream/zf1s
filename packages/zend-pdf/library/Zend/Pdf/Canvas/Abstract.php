@@ -1064,6 +1064,40 @@ abstract class Zend_Pdf_Canvas_Abstract implements Zend_Pdf_Canvas_Interface
         return $this;
     }
 
+    public function widthForString($string, Zend_Pdf_Resource_Font $font = NULL, $fontSize = NULL)
+    {
+        static $widthCache = [];
+
+        if ($font === null) {
+            if ($this->_font === null) {
+                #require_once 'Zend/Pdf/Exception.php';
+                throw new Zend_Pdf_Exception('Font has not been set');
+            }
+            $font = $this->_font;
+            $fontSize = $this->_fontSize;
+        }
+
+        $key = md5("$string-$font-$fontSize");
+        if (isset($widthCache[$key])) {
+            return $widthCache[$key];
+        }
+
+        $drawingString = '"libiconv"' == ICONV_IMPL ?
+            iconv('UTF-8', 'UTF-16BE//IGNORE', $string) :
+            @iconv('UTF-8', 'UTF-16BE', $string);
+
+        $characters = array();
+        for ($i = 0; $i < strlen($drawingString); $i++) {
+            $characters[] = (ord($drawingString[$i++]) << 8) | ord($drawingString[$i]);
+        }
+        $glyphs = $font->glyphNumbersForCharacters($characters);
+        $widths = $font->widthsForGlyphs($glyphs);
+        $stringWidth = (array_sum($widths) / $font->getUnitsPerEm()) * $fontSize;
+        $widthCache[$key] = $stringWidth;
+
+        return $stringWidth;
+    }
+
      /**
      * Close the path by drawing a straight line back to it's beginning.
      *
