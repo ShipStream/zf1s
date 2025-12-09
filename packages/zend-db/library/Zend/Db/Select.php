@@ -44,6 +44,7 @@
 class Zend_Db_Select
 {
 
+    const WITH           = 'with';
     const SELECT_HINT    = 'selecthint';
     const DISTINCT       = 'distinct';
     const COLUMNS        = 'columns';
@@ -145,6 +146,7 @@ class Zend_Db_Select
      * @var array
      */
     protected static $_partsInit = array(
+        self::WITH         => array(),
         self::SELECT_HINT  => array(),
         self::DISTINCT     => false,
         self::COLUMNS      => array(),
@@ -229,6 +231,50 @@ class Zend_Db_Select
     public function bind($bind)
     {
         $this->_bind = $bind;
+
+        return $this;
+    }
+
+    /**
+     * Adds a Common Table Expression (CTE) to the query.
+     *
+     * MySQL supports CTEs starting from version 8.0. CTEs allow you to define
+     * temporary named result sets that exist within the scope of a single query.
+     *
+     * <code>
+     * // Simple CTE
+     * $select->with('cte_name', $subSelect);
+     *
+     * // CTE with explicit column names
+     * $select->with('cte_name', $subSelect, array('col1', 'col2'));
+     *
+     * // Recursive CTE
+     * $select->with('cte_name', $subSelect, array(), true);
+     * </code>
+     *
+     * @param string $name The name of the CTE
+     * @param Zend_Db_Select|string $select The subquery for the CTE
+     * @param array $columns Optional explicit column names for the CTE
+     * @param bool $recursive Whether this is a recursive CTE (default false)
+     * @return Zend_Db_Select This Zend_Db_Select object
+     * @throws Zend_Db_Select_Exception
+     */
+    public function with($name, $select, $columns = array(), $recursive = false)
+    {
+        if (empty($name)) {
+            throw new Zend_Db_Select_Exception('CTE name cannot be empty');
+        }
+
+        if ( ! ($select instanceof Zend_Db_Select) && ! is_string($select)) {
+            throw new Zend_Db_Select_Exception('CTE select must be a Zend_Db_Select instance or string');
+        }
+
+        $this->_parts[self::WITH][] = array(
+            'name' => $name,
+            'select' => $select,
+            'columns' => $columns,
+            'recursive' => (bool) $recursive
+        );
 
         return $this;
     }
@@ -1561,6 +1607,56 @@ class Zend_Db_Select
         }
 
         return $sql;
+    }
+
+    /**
+     * Render WITH clause (Common Table Expressions)
+     *
+     * @param string $sql SQL query
+     * @return string
+     */
+    protected function _renderWith($sql)
+    {
+        if (empty($this->_parts[self::WITH])) {
+            return $sql;
+        }
+
+        $withClauses = array();
+        $hasRecursive = false;
+
+        foreach ($this->_parts[self::WITH] as $cte) {
+            if ($cte['recursive']) {
+                $hasRecursive = true;
+            }
+
+            $cteName = $this->_adapter->quoteIdentifier($cte['name']);
+
+            // Add column list if specified
+            if ( ! empty($cte['columns'])) {
+                $columns = array();
+                foreach ($cte['columns'] as $column) {
+                    $columns[] = $this->_adapter->quoteIdentifier($column);
+                }
+                $cteName .= ' (' . implode(', ', $columns) . ')';
+            }
+
+            // Get the subquery SQL
+            if ($cte['select'] instanceof Zend_Db_Select) {
+                $subquery = $cte['select']->assemble();
+            } else {
+                $subquery = $cte['select'];
+            }
+
+            $withClauses[] = $cteName . ' AS (' . $subquery . ')';
+        }
+
+        $withClause = 'WITH ';
+        if ($hasRecursive) {
+            $withClause .= 'RECURSIVE ';
+        }
+        $withClause .= implode(",\n     ", $withClauses);
+
+        return $withClause . "\n" . $sql;
     }
 
     /**
