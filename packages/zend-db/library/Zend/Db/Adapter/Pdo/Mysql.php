@@ -153,17 +153,36 @@ class Zend_Db_Adapter_Pdo_Mysql extends Zend_Db_Adapter_Pdo_Abstract
      * DATA_TYPE        => string; SQL datatype name of column
      * DEFAULT          => string; default expression of column, null if none
      * NULLABLE         => boolean; true if column can have nulls
-     * LENGTH           => number; length of CHAR/VARCHAR
-     * SCALE            => number; scale of NUMERIC/DECIMAL
-     * PRECISION        => number; precision of NUMERIC/DECIMAL
+     * LENGTH           => number; length of CHAR/VARCHAR/BINARY/VARBINARY/BIT
+     * SCALE            => number; scale of NUMERIC/DECIMAL/FLOAT/DOUBLE
+     * PRECISION        => number; precision of NUMERIC/DECIMAL/FLOAT/DOUBLE/DATETIME/TIMESTAMP/TIME
      * UNSIGNED         => boolean; unsigned property of an integer type
      * PRIMARY          => boolean; true if column is part of the primary key
      * PRIMARY_POSITION => integer; position of column in primary key
      * IDENTITY         => integer; true if column is auto-generated with unique values
+     * GENERATED        => boolean; true if column is a generated column
+     * ALLOWED_VALUES   => array; list of allowed values for ENUM/SET columns, null otherwise
      *
      * @param string $tableName
      * @param string $schemaName OPTIONAL
-     * @return array
+     * @return array<string, array{
+     *     SCHEMA_NAME: string|null,
+     *     TABLE_NAME: string,
+     *     COLUMN_NAME: string,
+     *     COLUMN_POSITION: int,
+     *     DATA_TYPE: string,
+     *     DEFAULT: string|null,
+     *     NULLABLE: bool,
+     *     LENGTH: string|null,
+     *     SCALE: string|null,
+     *     PRECISION: string|null,
+     *     UNSIGNED: bool|null,
+     *     PRIMARY: bool,
+     *     PRIMARY_POSITION: int|null,
+     *     IDENTITY: bool,
+     *     GENERATED: bool,
+     *     ALLOWED_VALUES: string[]|null,
+     * }>
      */
     public function describeTable($tableName, $schemaName = null)
     {
@@ -192,26 +211,36 @@ class Zend_Db_Adapter_Pdo_Mysql extends Zend_Db_Adapter_Pdo_Abstract
         $i = 1;
         $p = 1;
         foreach ($result as $row) {
-            list($length, $scale, $precision, $unsigned, $primary, $primaryPosition, $identity)
-                = array(null, null, null, null, false, null, false);
+            list($length, $scale, $precision, $unsigned, $primary, $primaryPosition, $identity, $values)
+                = array(null, null, null, null, false, null, false, null);
             if (preg_match('/unsigned/', $row[$type])) {
                 $unsigned = true;
             }
-            if (preg_match('/^((?:var)?char)\((\d+)\)/', $row[$type], $matches)) {
+            if (preg_match('/^((?:var)?(?:char|binary))\((\d+)\)/', $row[$type], $matches)) {
                 $row[$type] = $matches[1];
                 $length = $matches[2];
             } else if (preg_match('/^decimal\((\d+),(\d+)\)/', $row[$type], $matches)) {
                 $row[$type] = 'decimal';
                 $precision = $matches[1];
                 $scale = $matches[2];
-            } else if (preg_match('/^float\((\d+),(\d+)\)/', $row[$type], $matches)) {
-                $row[$type] = 'float';
-                $precision = $matches[1];
-                $scale = $matches[2];
+            } else if (preg_match('/^(float|double)\((\d+),(\d+)\)/', $row[$type], $matches)) {
+                $row[$type] = $matches[1];
+                $precision = $matches[2];
+                $scale = $matches[3];
             } else if (preg_match('/^((?:big|medium|small|tiny)?int)(\((\d+)\))?/', $row[$type], $matches)) {
                 $row[$type] = $matches[1];
                 // The optional argument of a MySQL int type is not precision
                 // or length; it is only a hint for display width.
+            } else if (preg_match('/^(datetime|timestamp|time)\((\d+)\)/', $row[$type], $matches)) {
+                $row[$type] = $matches[1];
+                $precision = $matches[2];
+            } else if (preg_match('/^(enum|set)\((.+)\)/', $row[$type], $matches)) {
+                $row[$type] = $matches[1];
+                preg_match_all("/'((?:[^']|'')*)'/", $matches[2], $valueMatches);
+                $values = array_map(static function ($v) { return str_replace("''", "'", $v); }, $valueMatches[1]);
+            } else if (preg_match('/^bit\((\d+)\)/', $row[$type], $matches)) {
+                $row[$type] = 'bit';
+                $length = $matches[1];
             }
             if (strtoupper($row[$key]) == 'PRI') {
                 $primary = true;
@@ -238,7 +267,8 @@ class Zend_Db_Adapter_Pdo_Mysql extends Zend_Db_Adapter_Pdo_Abstract
                 'PRIMARY'          => $primary,
                 'PRIMARY_POSITION' => $primaryPosition,
                 'IDENTITY'         => $identity,
-                'GENERATED'        => $row[$extra] == 'VIRTUAL GENERATED' || $row[$extra] == 'STORED GENERATED'
+                'GENERATED'        => $row[$extra] == 'VIRTUAL GENERATED' || $row[$extra] == 'STORED GENERATED',
+                'ALLOWED_VALUES'   => $values
             );
             ++$i;
         }
