@@ -25,7 +25,7 @@
  * Abstract File Writer
  *
  * @category   Zend
- * @package    Zend_package
+ * @package    Zend_Config
  * @copyright  Copyright (c) 2005-2015 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
  * @version    $Id$
@@ -80,7 +80,7 @@ class Zend_Config_Writer_FileAbstract extends Zend_Config_Writer
      * @param bool $exclusiveLock
      * @return void
      */
-    public function write($filename = null, Zend_Config $config = null, $exclusiveLock = null)
+    public function write($filename = null, ?Zend_Config $config = null, $exclusiveLock = null)
     {
         if ($filename !== null) {
             $this->setFilename($filename);

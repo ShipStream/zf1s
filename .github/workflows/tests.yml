@@ -11,18 +11,13 @@ on:
 jobs:
   test:
     name: PHP ${{ matrix.php }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
         experimental:
           - false
         php:
-          - "5.3"
-          - "5.4"
-          - "5.5"
-          - "5.6"
-          - "7.0"
           - "7.1"
           - "7.2"
           - "7.3"
@@ -31,6 +26,13 @@ jobs:
           - "8.1"
           - "8.2"
           - "8.3"
+          - "8.4"
+          - "8.5"
+        # to add a new PHP version as experimental during compat work
+        # (experimental: true allows CI to pass even if that version fails):
+        # include:
+        #   - php: "8.6"
+        #     experimental: true
 
     env:
       MYSQL_USER: "zftest"
@@ -43,7 +45,7 @@ jobs:
       POSTGRES_DB: "zftest"
       POSTGRES_HOST: "127.0.0.1"
 
-      # https://hub.docker.com/r/bitnami/openldap
+      # https://hub.docker.com/r/bitnamilegacy/openldap
       LDAP_ROOT: "dc=example,dc=com"
       LDAP_ALLOW_ANON_BINDING: false
       LDAP_SKIP_DEFAULT_TREE: "yes"
@@ -88,7 +90,7 @@ jobs:
           --health-retries 5
 
       openldap:
-        image: bitnami/openldap:2.5
+        image: bitnamilegacy/openldap:2.6
         ports:
           - 1389:1389
         env:
@@ -103,7 +105,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
 
       - name: Setup PHP ${{ matrix.php }}
         uses: shivammathur/setup-php@v2
@@ -124,6 +126,7 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress --no-suggest
 
+      # runs on every PHP version to catch syntax incompatible with older versions
       - name: Lint PHP source files
         run: |
           composer lint.checkstyle | cs2pr
@@ -145,5 +148,22 @@ jobs:
       - name: "Run PHPUnit tests (Experimental: ${{ matrix.experimental }})"
         run: vendor/bin/phpunit --verbose
         continue-on-error: ${{ matrix.experimental }}
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          # lint only needs to run once, not per PHP version
+          php-version: "8.5"
+          tools: phpcs, cs2pr
+
+      - name: Run phpcs
+        run: phpcs --report=checkstyle -q | cs2pr
 
 # vim:ft=yaml:et:ts=2:sw=2

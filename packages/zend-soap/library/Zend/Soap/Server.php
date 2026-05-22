@@ -169,7 +169,7 @@ class Zend_Soap_Server implements Zend_Server_Interface
      * @param array $options
      * @return void
      */
-    public function __construct($wsdl = null, array $options = null)
+    public function __construct($wsdl = null, ?array $options = null)
     {
         if (!extension_loaded('soap')) {
             // require_once 'Zend/Soap/Server/Exception.php';
@@ -887,7 +887,7 @@ class Zend_Soap_Server implements Zend_Server_Interface
         } else {
             try {
                 $soap->handle($this->_request);
-            } catch (Exception $e) {
+            } catch (Throwable $e) {
                 $fault = $this->fault($e);
             }
         }
@@ -978,7 +978,7 @@ class Zend_Soap_Server implements Zend_Server_Interface
      */
     public function fault($fault = null, $code = "Receiver")
     {
-        if ($fault instanceof Exception) {
+        if ($fault instanceof Throwable) {
             $class = get_class($fault);
             if (in_array($class, $this->_faultExceptions)) {
                 $message = $fault->getMessage();
@@ -1015,7 +1015,7 @@ class Zend_Soap_Server implements Zend_Server_Interface
      * @return void
      * @throws SoapFault
      */
-    public function handlePhpErrors($errno, $errstr, $errfile = null, $errline = null, array $errcontext = null)
+    public function handlePhpErrors($errno, $errstr, $errfile = null, $errline = null, ?array $errcontext = null)
     {
         throw $this->fault($errstr, "Receiver");
     }

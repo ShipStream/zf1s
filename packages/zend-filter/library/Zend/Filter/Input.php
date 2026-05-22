@@ -162,7 +162,7 @@ class Zend_Filter_Input
      * @param array $data       OPTIONAL
      * @param array $options    OPTIONAL
      */
-    public function __construct($filterRules, $validatorRules, array $data = null, array $options = null)
+    public function __construct($filterRules, $validatorRules, ?array $data = null, ?array $options = null)
     {
         if ($options) {
             $this->setOptions($options);
@@ -850,7 +850,7 @@ class Zend_Filter_Input
                     
                     if (is_array($rule)) {
                         $keys      = array_keys($rule);
-                        $classKey  = array_shift($keys);
+                        $classKey  = array_shift($keys) ?? '';
                         if (isset($rule[$classKey])) {
                             $ruleClass = $rule[$classKey];
                             if ($ruleClass === 'NotEmpty') {

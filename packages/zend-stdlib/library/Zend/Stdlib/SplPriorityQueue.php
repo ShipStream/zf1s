@@ -46,6 +46,7 @@ class Zend_Stdlib_SplPriorityQueue extends SplPriorityQueue implements Serializa
      * @param  mixed $priority 
      * @return void
      */
+    #[\ReturnTypeWillChange]
     public function insert($datum, $priority)
     {
         // If using the native PHP SplPriorityQueue implementation, we need to
@@ -101,9 +102,10 @@ class Zend_Stdlib_SplPriorityQueue extends SplPriorityQueue implements Serializa
 
     /**
      * Serialize
-     * 
+     *
      * @return array
      */
+    #[\ReturnTypeWillChange]
     public function __serialize()
     {
         $data = array();
@@ -139,6 +141,7 @@ class Zend_Stdlib_SplPriorityQueue extends SplPriorityQueue implements Serializa
      * @param  array $data
      * @return void
      */
+    #[ReturnTypeWillChange]
     public function __unserialize($data)
     {
         foreach ($data as $item) {
